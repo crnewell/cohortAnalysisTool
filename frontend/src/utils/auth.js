@@ -1,36 +1,40 @@
+import bcrypt from "bcryptjs";
+
 export function registerUser(username, password) {
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    if (users[username]) {
-      return { success: false, message: "User already exists" };
-    }
-    users[username] = { password };
-    localStorage.setItem("users", JSON.stringify(users));
-    return { success: true, message: "Registration successful" };
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  if (users[username]) {
+    return { success: false, message: "User already exists" };
   }
-  
-  export function loginUser(username, password) {
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    if (users[username] && users[username].password === password) {
-      localStorage.setItem("loggedInUser", username);
-      return { success: true };
-    }
-    return { success: false, message: "Invalid username or password" };
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  users[username] = { password: hashedPassword };
+  localStorage.setItem("users", JSON.stringify(users));
+  return { success: true, message: "Registration successful" };
+}
+
+export function loginUser(username, password) {
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  const user = users[username];
+  if (user && bcrypt.compareSync(password, user.password)) {
+    sessionStorage.setItem("loggedInUser", username);
+    return { success: true };
   }
-  
-  export function logoutUser() {
-    localStorage.removeItem("loggedInUser");
+  return { success: false, message: "Invalid username or password" };
+}
+
+export function logoutUser() {
+  sessionStorage.removeItem("loggedInUser");
+}
+
+export function getLoggedInUser() {
+  return sessionStorage.getItem("loggedInUser");
+}
+
+export function resetPassword(username, newPassword) {
+  const users = JSON.parse(localStorage.getItem("users") || "{}");
+  if (!users[username]) {
+    return { success: false, message: "User not found" };
   }
-  
-  export function getLoggedInUser() {
-    return localStorage.getItem("loggedInUser");
-  }
-  
-  export function resetPassword(username, newPassword) {
-    const users = JSON.parse(localStorage.getItem("users") || "{}");
-    if (!users[username]) {
-      return { success: false, message: "User not found" };
-    }
-    users[username].password = newPassword;
-    localStorage.setItem("users", JSON.stringify(users));
-    return { success: true, message: "Password reset successful" };
-  }
+  users[username].password = bcrypt.hashSync(newPassword, 10);
+  localStorage.setItem("users", JSON.stringify(users));
+  return { success: true, message: "Password reset successful" };
+}
