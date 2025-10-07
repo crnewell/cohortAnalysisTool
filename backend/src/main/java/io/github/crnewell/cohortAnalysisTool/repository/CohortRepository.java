@@ -62,21 +62,32 @@ public class CohortRepository {
         if (personIds.isEmpty()) return Collections.emptyList();
         String inClause = personIds.stream().map(String::valueOf).collect(Collectors.joining(","));
         String sql = """
-            SELECT 
-                (CAST(EXTRACT(year FROM CURRENT_DATE) AS INTEGER) - "YEAR_OF_BIRTH") / 10 * 10 AS age_group,
-                "GENDER_CONCEPT_ID",
-                COUNT(*) AS count
-            FROM person
-            WHERE "PERSON_ID" IN (%s)
-            GROUP BY age_group, "GENDER_CONCEPT_ID"
-            ORDER BY age_group, "GENDER_CONCEPT_ID"
-        """.formatted(inClause);
+        SELECT age_bucket, "GENDER_CONCEPT_ID", COUNT(*) AS count
+        FROM (
+          SELECT 
+            "PERSON_ID",
+            "GENDER_CONCEPT_ID",
+            (2010 - "YEAR_OF_BIRTH") AS age,
+            CAST(FLOOR(CAST((2010 - "YEAR_OF_BIRTH") AS DOUBLE) / 10) * 10 AS INTEGER) AS age_group_start,
+            CASE
+              WHEN CAST(FLOOR(CAST((2010 - "YEAR_OF_BIRTH") AS DOUBLE) / 10) * 10 AS INTEGER) < 20 THEN '<20'
+              ELSE 
+                CAST(CAST(FLOOR(CAST((2010 - "YEAR_OF_BIRTH") AS DOUBLE) / 10) * 10 AS INTEGER) AS VARCHAR) 
+                || '-' || 
+                CAST(CAST(FLOOR(CAST((2010 - "YEAR_OF_BIRTH") AS DOUBLE) / 10) * 10 + 9 AS INTEGER) AS VARCHAR)
+            END AS age_bucket
+          FROM person
+          WHERE "PERSON_ID" IN (%s)
+        ) t
+        GROUP BY age_bucket, "GENDER_CONCEPT_ID"
+        ORDER BY age_bucket, "GENDER_CONCEPT_ID"
+    """.formatted(inClause);
 
         List<Map<String,Object>> results = new ArrayList<>();
         try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Map<String,Object> row = new HashMap<>();
-                row.put("age_group", rs.getInt("age_group"));
+                row.put("age_group", rs.getString("age_bucket"));           // e.g. "70-79" or "<20"
                 row.put("gender_concept_id", rs.getInt("GENDER_CONCEPT_ID"));
                 row.put("count", rs.getInt("count"));
                 results.add(row);
