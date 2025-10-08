@@ -1,0 +1,13 @@
+services:
+  backend:
+    build: ./backend
+    container_name: cohort-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/data:/app/data
+  frontend:
+    build: ./frontend
+    container_name: cohort-frontend
+    ports:
+      - "8000:80"

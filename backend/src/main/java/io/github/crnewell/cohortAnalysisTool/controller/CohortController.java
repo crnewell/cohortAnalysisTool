@@ -9,6 +9,7 @@ import java.sql.SQLException;
 
 @RestController
 @RequestMapping("/api/cohort")
+@CrossOrigin(origins = "http://localhost:8000")
 public class CohortController {
     private final CohortService cohortService;
 

@@ -35,7 +35,7 @@ export default function CohortPage() {
   const handleCompare = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/api/cohort/compare", {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/cohort/compare`, {
         params: {
           diseaseConceptId: disease,
           measurementConceptId: outcome,
