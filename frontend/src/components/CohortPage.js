@@ -50,26 +50,29 @@ export default function CohortPage() {
     }
   };
 
-  // ✅ Merge the two distributions into a single list for charting
-  const combineDistributions = (diseaseData, nonDiseaseData) => {
+  // ✅ Combine and filter by gender
+  const combineByGender = (diseaseData, nonDiseaseData, genderConceptId) => {
     const combined = {};
+    const filter = (arr) =>
+      arr.filter((r) => r.gender_concept_id === genderConceptId);
 
-    diseaseData.forEach((row) => {
-      const key = `${row.age_group}_${row.gender_concept_id}`;
+    const diseaseFiltered = filter(diseaseData);
+    const nonDiseaseFiltered = filter(nonDiseaseData);
+
+    diseaseFiltered.forEach((row) => {
+      const key = row.age_group;
       combined[key] = {
         age_group: row.age_group,
-        gender_concept_id: row.gender_concept_id,
         disease_count: row.count,
         non_disease_count: 0,
       };
     });
 
-    nonDiseaseData.forEach((row) => {
-      const key = `${row.age_group}_${row.gender_concept_id}`;
+    nonDiseaseFiltered.forEach((row) => {
+      const key = row.age_group;
       if (!combined[key]) {
         combined[key] = {
           age_group: row.age_group,
-          gender_concept_id: row.gender_concept_id,
           disease_count: 0,
           non_disease_count: row.count,
         };
@@ -78,7 +81,12 @@ export default function CohortPage() {
       }
     });
 
-    return Object.values(combined);
+    // Sort age groups numerically
+    return Object.values(combined).sort((a, b) => {
+      const getStart = (s) =>
+        s.includes("-") ? parseInt(s.split("-")[0]) : 0;
+      return getStart(a.age_group) - getStart(b.age_group);
+    });
   };
 
   const exportAsPNG = () => {
@@ -99,12 +107,10 @@ export default function CohortPage() {
     doc.save("cohort_summary.pdf");
   };
 
-  // Helper to map gender_concept_id to label
-  const genderLabel = (id) => {
-    if (id === 8507) return "Male";
-    if (id === 8532) return "Female";
-    return "Other";
-  };
+  const round1 = (val) =>
+    val !== undefined && val !== null && !isNaN(val)
+      ? Math.round(val * 10) / 10
+      : "-";
 
   return (
     <div style={{ padding: "30px", fontFamily: "Arial" }}>
@@ -151,45 +157,61 @@ export default function CohortPage() {
 
           {/* Age & Gender Distribution */}
           <h3>Age & Sex Distribution</h3>
+
+          <h4>Male</h4>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
-              data={combineDistributions(
+              data={combineByGender(
                 data.disease_age_gender,
-                data.non_disease_age_gender
+                data.non_disease_age_gender,
+                8507
               )}
             >
               <XAxis dataKey="age_group" />
               <YAxis />
-              <Tooltip
-                formatter={(value, name, props) =>
-                  `${value} ${name === "disease_count" ? "(Disease)" : "(Non-Disease)"}`
-                }
-                labelFormatter={(label, payload) =>
-                  `Age: ${label}, Gender: ${genderLabel(
-                    payload?.[0]?.payload?.gender_concept_id
-                  )}`
-                }
-              />
+              <Tooltip />
               <Legend />
               <Bar dataKey="disease_count" fill="#8884d8" name="Disease" />
               <Bar dataKey="non_disease_count" fill="#82ca9d" name="Non-Disease" />
             </BarChart>
           </ResponsiveContainer>
 
-          {/* Box Plot placeholder (since your backend doesn’t return measurement arrays yet) */}
+          <h4 style={{ marginTop: "30px" }}>Female</h4>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart
+              data={combineByGender(
+                data.disease_age_gender,
+                data.non_disease_age_gender,
+                8532
+              )}
+            >
+              <XAxis dataKey="age_group" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="disease_count" fill="#8884d8" name="Disease" />
+              <Bar dataKey="non_disease_count" fill="#82ca9d" name="Non-Disease" />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Box Plot (approximation from stats) */}
           <h3 style={{ marginTop: "40px" }}>Measurement Comparison</h3>
           <Plot
             data={[
               {
-                y: [data.disease_stats?.median, data.disease_stats?.p25, data.disease_stats?.p75],
+                y: [
+                  data.disease_stats?.p25,
+                  data.disease_stats?.median,
+                  data.disease_stats?.p75,
+                ],
                 type: "box",
                 name: "Disease",
                 marker: { color: "#8884d8" },
               },
               {
                 y: [
-                  data.non_disease_stats?.median,
                   data.non_disease_stats?.p25,
+                  data.non_disease_stats?.median,
                   data.non_disease_stats?.p75,
                 ],
                 type: "box",
@@ -218,7 +240,11 @@ export default function CohortPage() {
 
           {/* Summary Stats */}
           <h3 style={{ marginTop: "30px" }}>Summary Statistics</h3>
-          <table border="1" cellPadding="8" style={{ borderCollapse: "collapse" }}>
+          <table
+            border="1"
+            cellPadding="8"
+            style={{ borderCollapse: "collapse", minWidth: "400px" }}
+          >
             <thead>
               <tr>
                 <th>Group</th>
@@ -232,16 +258,16 @@ export default function CohortPage() {
               <tr>
                 <td>Disease</td>
                 <td>{data.disease_stats?.n}</td>
-                <td>{data.disease_stats?.median}</td>
-                <td>{data.disease_stats?.p25}</td>
-                <td>{data.disease_stats?.p75}</td>
+                <td>{round1(data.disease_stats?.median)}</td>
+                <td>{round1(data.disease_stats?.p25)}</td>
+                <td>{round1(data.disease_stats?.p75)}</td>
               </tr>
               <tr>
                 <td>Non-Disease</td>
                 <td>{data.non_disease_stats?.n}</td>
-                <td>{data.non_disease_stats?.median}</td>
-                <td>{data.non_disease_stats?.p25}</td>
-                <td>{data.non_disease_stats?.p75}</td>
+                <td>{round1(data.non_disease_stats?.median)}</td>
+                <td>{round1(data.non_disease_stats?.p25)}</td>
+                <td>{round1(data.non_disease_stats?.p75)}</td>
               </tr>
             </tbody>
           </table>
