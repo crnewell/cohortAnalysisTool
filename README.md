@@ -34,8 +34,8 @@ A full-stack application for building and comparing OMOP CDM cohorts (e.g., diab
 ## 📊 Dataset Notes
 Data from the **CMS Synthetic PUF OMOP** dataset.  
 A small subset of CSVs (`CDM_PERSON.csv`, `CDM_CONDITION_OCCURRENCE.csv`, `CDM_MEASUREMENT.csv`) is included under `/backend/data`.
+Synthetic numbers were created for measurements since the value_as_number column of the MEASUREMENT table contained no values
 
-Synthetic numbers were created for measurements since the value_as_number column of the MEASUREMENT csv was always empty
 
 ---
 
@@ -64,8 +64,12 @@ Synthetic numbers were created for measurements since the value_as_number column
 
 ## 🐳 Running with Docker
 
-### Backend only
-```bash
-cd backend
-docker build -t cohort-backend .
-docker run -p 8080:8080 cohort-backend
+1. **Clone the repository**
+   git clone <your-repo-url>
+   cd <your-repo-name>
+
+2. **Run the application**
+   docker compose up --build
+
+3. **Access the application**
+   Open your browser and navigate to: http://localhost:8000

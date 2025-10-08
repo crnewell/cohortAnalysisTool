@@ -1,11 +1,9 @@
 services:
   backend:
-    build: ./backend
+    image: crnewell/cohort-analysis-backend:latest
     container_name: cohort-backend
     ports:
       - "8080:8080"
-    volumes:
-      - ./backend/data:/app/data
   frontend:
     build: ./frontend
     container_name: cohort-frontend
