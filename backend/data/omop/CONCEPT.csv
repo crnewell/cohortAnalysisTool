@@ -1,5 +1,11 @@
 CONCEPT_ID,CONCEPT_NAME
-201826,Type 2 diabetes mellitus
+201826,Diabetes
+443392,Cancer
+316866,Hypertension
+46271022,Chronic kidney disease
+3004501,Glucose (mass/volume)
+3000963,Hemoglobin (mass/volume)
+301288,Diastolic blood pressure
+3004249,Systolic blood pressure
 8532,Female
 8507,Male
-3004501,Glucose
